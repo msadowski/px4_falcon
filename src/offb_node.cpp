@@ -5,7 +5,7 @@
  */
 
 #include <ros/ros.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
@@ -22,8 +22,8 @@ int main(int argc, char **argv)
 
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
             ("mavros/state", 10, state_cb);
-    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
-            ("mavros/setpoint_position/local", 10);
+    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::TwistStamped>
+            ("mavros/setpoint_velocity/cmd_vel", 10);
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
             ("mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
@@ -38,14 +38,18 @@ int main(int argc, char **argv)
         rate.sleep();
     }
 
-    geometry_msgs::PoseStamped pose;
-    pose.pose.position.x = 0;
-    pose.pose.position.y = 0;
-    pose.pose.position.z = 2;
+    geometry_msgs::TwistStamped cmd_twist;
+    cmd_twist.twist.linear.x = 0;
+    cmd_twist.twist.linear.y = 0;
+    cmd_twist.twist.linear.z = 2;
+    cmd_twist.twist.angular.x = 0;
+    cmd_twist.twist.angular.y = 0;
+    cmd_twist.twist.angular.z = 0;
+
 
     //send a few setpoints before starting
     for(int i = 100; ros::ok() && i > 0; --i){
-        local_pos_pub.publish(pose);
+        local_pos_pub.publish(cmd_twist);
         ros::spinOnce();
         rate.sleep();
     }
@@ -77,7 +81,7 @@ int main(int argc, char **argv)
             }
         }
 
-        local_pos_pub.publish(pose);
+        local_pos_pub.publish(cmd_twist);
 
         ros::spinOnce();
         rate.sleep();
