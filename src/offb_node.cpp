@@ -47,15 +47,6 @@ int main(int argc, char **argv)
         rate.sleep();
     }
 
-    /*
-    cmd_twist.twist.linear.x = 0;
-    cmd_twist.twist.linear.y = 0;
-    cmd_twist.twist.linear.z = 2;
-    cmd_twist.twist.angular.x = 0;
-    cmd_twist.twist.angular.y = 0;
-    cmd_twist.twist.angular.z = 0;
-    */
-
     //send a few setpoints before starting
     for(int i = 100; ros::ok() && i > 0; --i){
         local_pos_pub.publish(cmd_twist);
