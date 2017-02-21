@@ -14,16 +14,10 @@ def joy_callback(msg):
     y = -msg.axes[3]
     z = msg.axes[1]
     rot_z = msg.axes[4]
-    
-    v = sqrt(x*x+y*y)
-    if v != 0.0:
-        alpha = acos(x/v)
-    else:
-        alpha = 0.0
-    
-    gs_x = v*cos(heading+alpha)
-    gs_y = get_sign(y)*v*sin(heading+alpha)
-    rospy.loginfo("v: %f\nhdg: %f\n alpha: %f\n x: %f\n y: %f", v, heading, alpha, gs_x, gs_y)
+   
+    gs_x = x*sin(heading) + y*cos(heading)
+    gs_y = x*cos(heading) - y*sin(heading)
+
     publish_twist(gs_x,gs_y,z,rot_z)
 
 def publish_twist(x,y,z,rot_z):    
@@ -52,7 +46,6 @@ def main():
     rospy.Subscriber('joy', Joy, joy_callback)
     rospy.Subscriber('mavros/global_position/compass_hdg', Float64, hdg_callback)
     rospy.spin() 
-
 
 if __name__ == '__main__':
     try:
