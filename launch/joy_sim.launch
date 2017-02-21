@@ -1,6 +1,6 @@
 <launch>
   <node name="offb_node" pkg="offboard_cmd" type="offb_node"/>
-  <node name="offb_joy" pkg="offboard_cmd" type="joy_translator.py"/>
+  <node name="offb_joy" pkg="offboard_cmd" type="joy_translator.py" output="screen"/>
   <node name="joy" pkg="joy" type="joy_node"/>
  
   <!-- mavros px4 launch !--> 
