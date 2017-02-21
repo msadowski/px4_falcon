@@ -21,18 +21,28 @@ def joy_callback(msg):
     else:
         alpha = 0.0
     
-    x = v*cos(heading+alpha)
-    y = v*sin(heading+alpha)
-    rospy.loginfo("v: %f\nhdg: %f\n alpha: %f\n x: %f\n y: %f", v, heading, alpha, x, y)
+    gs_x = v*cos(heading+alpha)
+    gs_y = get_sign(y)*v*sin(heading+alpha)
+    rospy.loginfo("v: %f\nhdg: %f\n alpha: %f\n x: %f\n y: %f", v, heading, alpha, gs_x, gs_y)
+    publish_twist(gs_x,gs_y,z,rot_z)
 
+def publish_twist(x,y,z,rot_z):    
     twist = TwistStamped()
     twist.header.stamp = rospy.Time.now()
-    twist.twist.linear.x = v*cos(heading+alpha)
-    twist.twist.linear.y = v*sin(heading+alpha)
+    twist.twist.linear.x = x
+    twist.twist.linear.y = y 
     twist.twist.linear.z = z
     twist.twist.angular.z = rot_z
     twist_pub.publish(twist)
-    
+
+def get_sign(num):
+    if num < 0:
+        return -1
+    elif num == 0:
+        return 0
+    else:
+        return 1
+
 def hdg_callback(msg):
     global heading 
     heading = msg.data*pi/180.0
