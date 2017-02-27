@@ -22,6 +22,9 @@
 #include "falcon/grip/FalconGripFourButton.h"
 #include "falcon/kinematic/FalconKinematicStamper.h"
 
+#include <ros/ros.h>
+#include <geometry_msgs/TwistStamped.h>
+
 using namespace libnifalcon;
 using namespace std;
 using namespace StamperKinematicImpl;
@@ -115,7 +118,7 @@ bool initialise()
 	//Seems to be important to run the io loop once to be sure of sensible values next time:
 	falcon.runIOLoop();
 
-	//falcon.getFalconFirmware()->setHomingMode(true);
+	falcon.getFalconFirmware()->setHomingMode(true);
 	//falcon.setFalconKinematic<FalconKinematicStamper>();
   falcon.setFalconKinematic<FalconKinematicStamper>();
 	falcon.setFalconGrip<libnifalcon::FalconGripFourButton>();
@@ -126,27 +129,63 @@ bool initialise()
 int main(int argc, char* argv[])
 {
 
+  ros::init(argc, argv, "falcon_stream");
+  ros::NodeHandle node;
+
 	if(!initialise())
 		return 0;
 
-	gstd:array<double, 3> pos;
+  std::array<double, 3> pos;
+  /*TODO: move falcon to get min and max encoder values
+  ros::Duration offset_duration = ros::Duration(10);
+  ros::Time begin = ros::Time::now();
+  while(ros::Time::now() - begin < offset_duration)
+  {
+    
+    printf("DURATION\n");
+  }
+  */
+  float z_min = 0.0745;
+  float z_max = 0.175;
+  float z_mid = z_min + (z_max - z_min)/2.0;
 
-	while(1)
+  float x_min = -0.051;
+  float x_max = 0.051;
+  float x_mid = x_min + (x_max - x_min)/2.0;
+
+  float y_min = -0.053;
+  float y_max = 0.053;
+  float y_mid = y_min + (y_max - y_min)/2.0;
+	while(ros::ok())
 	{
 		//Ask libnifalcon to update the encoder positions and apply any forces waiting:
 		falcon.runIOLoop();
     
 
-    std:array<double, 3> pos = falcon.getPosition();
+    std::array<double, 3> pos = falcon.getPosition();
+    
+    std::array<double, 3> force;
+    //force[0] = -1*pos[0]*70;
+    //force[1] = -1*pos[1]*60;
+    pos[0] = pos[0]*1.0/(x_max-x_mid);
+    pos[1] = pos[1]*1.0/(y_max-y_mid);
+    pos[2] = (pos[2]-z_mid)*1.0/(z_max-z_mid); //Normlize output to 1
+    force[0] = -4*pos[0];
+    force[1] = -5*pos[1];
+    force[2] = -5*pos[2];
+    falcon.setForce(force);
+    printf("Force is %f", force[2]);
     //X: left right
-    //printf("X: %f\tY: %f\tZ: %f\n", pos[0],pos[1],pos[2]); 
+    printf("X: %f\tY: %f\tZ: %f\n", pos[0],pos[1],pos[2]); 
+/*
     if(falcon.getFalconGrip()->getDigitalInputs() 
              & libnifalcon::FalconGripFourButton::PLUS_BUTTON)
     {
       printf("PRESSED\n");
-    }
+    }*/
 	}
-
+  falcon.close();
 
 	return 0;
 }
+
