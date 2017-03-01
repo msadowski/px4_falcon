@@ -2,8 +2,8 @@
 
 I described my work on this project on my blog:
 
-* [Part 1]()
-* [Part 2]()
+* [Part 1](https://msadowski.github.io/1ppm/uav-haptic-control-pt1/)
+* [Part 2](https://msadowski.github.io/1ppm/uav-haptic-control-pt2/)
 
 ## Getting started
 
