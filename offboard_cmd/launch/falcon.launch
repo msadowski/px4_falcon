@@ -1,6 +1,6 @@
 <launch>
   <node name="offb_node" pkg="offboard_cmd" type="offb_node"/>
-  <node name="falcon_node" pkg="falcon" type="falcon_node"/>
+  <node name="falcon_node" pkg="falcon" type="falcon_node" output="screen"/>
  
   <!-- mavros px4 launch !--> 
   <arg name="fcu_url" default="udp://:14540@192.168.1.36:14557" />

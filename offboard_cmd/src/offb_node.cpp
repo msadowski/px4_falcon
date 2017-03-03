@@ -4,22 +4,43 @@
  * stack and tested in Gazebo SITL
  */
 
+#include <math.h>
 #include <ros/ros.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <std_msgs/Float64.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
+#include <boost/thread/mutex.hpp>
 
 mavros_msgs::State current_state;
+geometry_msgs::TwistStamped cmd_twist;
+float heading_rad;
+boost::mutex mtx_twist;
+
 void state_cb(const mavros_msgs::State::ConstPtr& msg)
 {
     current_state = *msg;
 }
 
-geometry_msgs::TwistStamped cmd_twist;
 void twist_cb(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
-    cmd_twist = *msg;
+    //lock resource for concurrent access
+    mtx_twist.lock();
+    cmd_twist.header.stamp = msg->header.stamp;
+    cmd_twist.twist.angular.z = msg->twist.angular.z;
+    float x = msg->twist.linear.x;
+    float y = msg->twist.linear.y;
+    //convert from body referenced to earth referenced
+    cmd_twist.twist.linear.x = x*sin(heading_rad) + y*cos(heading_rad);
+    cmd_twist.twist.linear.y = x*cos(heading_rad) - y*sin(heading_rad);
+    cmd_twist.twist.linear.z = msg->twist.linear.z;
+    mtx_twist.unlock();
+}
+
+void hdg_callback(const std_msgs::Float64::ConstPtr& msg)
+{
+  heading_rad = msg->data*M_PI/180.0;
 }
 
 int main(int argc, char **argv)
@@ -31,6 +52,8 @@ int main(int argc, char **argv)
             ("mavros/state", 10, state_cb);
     ros::Subscriber twist_sub = nh.subscribe<geometry_msgs::TwistStamped>
             ("falcon/twist", 10, twist_cb);
+    ros::Subscriber heading_sub = nh.subscribe<std_msgs::Float64>
+            ("mavros/global_position/compass_hdg",10,hdg_callback);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::TwistStamped>
             ("mavros/setpoint_velocity/cmd_vel", 10);
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
@@ -81,7 +104,9 @@ int main(int argc, char **argv)
             }
         }
 
+        mtx_twist.lock();
         local_pos_pub.publish(cmd_twist);
+        mtx_twist.unlock();
 
         ros::spinOnce();
         rate.sleep();
