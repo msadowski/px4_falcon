@@ -32,6 +32,9 @@ using namespace StamperKinematicImpl;
 FalconDevice falcon;
 ros::Publisher twist_pub;
 
+const float YAW_RIGHT = -1;
+const float YAW_LEFT = 1;
+
 //////////////////////////////////////////////////////////
 /// Ask libnifalcon to get the Falcon ready for action
 /// nothing clever here, straight from the examples
@@ -127,13 +130,14 @@ bool initialise()
   return true;
 }
 
-void publish_twist(float deadzone, std::array<double, 3>& falcon_pos)
+void publish_twist(float deadzone, std::array<double, 3>& falcon_pos, float rotation)
 {
   geometry_msgs::TwistStamped twist;
   twist.header.stamp = ros::Time::now();
-  twist.twist.linear.x = (abs(falcon_pos[0]) > deadzone) ? falcon_pos[0] : 0;
-  twist.twist.linear.y = (abs(falcon_pos[1]) > deadzone) ? falcon_pos[1] : 0; 
+  twist.twist.linear.x = (abs(falcon_pos[1]) > deadzone) ? falcon_pos[1] : 0;
+  twist.twist.linear.y = (abs(falcon_pos[0]) > deadzone) ? falcon_pos[0] : 0; 
   twist.twist.linear.z = (abs(falcon_pos[2]) > deadzone) ? falcon_pos[2] : 0; 
+  twist.twist.angular.z = rotation;
   twist_pub.publish(twist);
 }
 
@@ -167,33 +171,39 @@ int main(int argc, char* argv[])
   float y_min = -0.053;
   float y_max = 0.053;
   float y_mid = y_min + (y_max - y_min)/2.0;
-	while(ros::ok())
+	
+  float rot_z = 0;
+  unsigned int grip_btn;
+
+  while(ros::ok())
 	{
 		//Ask libnifalcon to update the encoder positions and apply any forces waiting:
 		falcon.runIOLoop();
     
-
+    rot_z = 0;
     std::array<double, 3> pos = falcon.getPosition();
     
     std::array<double, 3> force;
-    //force[0] = -1*pos[0]*70;
-    //force[1] = -1*pos[1]*60;
     pos[0] = pos[0]*1.0/(x_max-x_mid);
     pos[1] = pos[1]*1.0/(y_max-y_mid);
     pos[2] = (pos[2]-z_mid)*1.0/(z_max-z_mid); //Normlize output to 1
-    publish_twist(0.15, pos); 
+    
+    grip_btn = falcon.getFalconGrip()->getDigitalInputs(); 
+    if(grip_btn & libnifalcon::FalconGripFourButton::PLUS_BUTTON)
+    {
+      rot_z = YAW_RIGHT;
+    } 
+    else if(grip_btn & libnifalcon::FalconGripFourButton::MINUS_BUTTON)
+    {
+      rot_z = YAW_LEFT;
+    }
+
+    publish_twist(0.15, pos, rot_z); 
+    
     force[0] = -4*pos[0];
     force[1] = -7*pos[1];
     force[2] = -5*pos[2];
     falcon.setForce(force);
-    //X: left right
-    printf("X: %f\tY: %f\tZ: %f\n", pos[0],pos[1],pos[2]);
-/*
-    if(falcon.getFalconGrip()->getDigitalInputs() 
-             & libnifalcon::FalconGripFourButton::PLUS_BUTTON)
-    {
-      printf("PRESSED\n");
-    }*/
 	}
   falcon.close();
 
