@@ -13,12 +13,9 @@ def joy_callback(msg):
     x = msg.axes[2]
     y = -msg.axes[3]
     z = msg.axes[1]
-    rot_z = msg.axes[4]
-   
-    gs_x = x*sin(heading) + y*cos(heading)
-    gs_y = x*cos(heading) - y*sin(heading)
+    rot_z = msg.axes[4] 
 
-    publish_twist(gs_x,gs_y,z,rot_z)
+    publish_twist(x,y,z,rot_z)
 
 def publish_twist(x,y,z,rot_z):    
     twist = TwistStamped()
