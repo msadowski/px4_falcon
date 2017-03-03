@@ -29,14 +29,6 @@ def publish_twist(x,y,z,rot_z):
     twist.twist.angular.z = rot_z
     twist_pub.publish(twist)
 
-def get_sign(num):
-    if num < 0:
-        return -1
-    elif num == 0:
-        return 0
-    else:
-        return 1
-
 def hdg_callback(msg):
     global heading 
     heading = msg.data*pi/180.0
